@@ -1,4 +1,4 @@
-# Parallel Computing Simulation Floods & CUDA Kernels
+# Parallel Computing: Rainwater Flooding Simulation & CUDA Kernels
 
 <div align="center">
   <img src="https://img.shields.io/badge/Language-C-00599C?style=flat-square&logo=c&logoColor=white" alt="C" />
@@ -9,105 +9,139 @@
 </div>
 
 > **About this project:**
-> This repository contains a collection of high-performance computing projects developed for the **Parallel Computing** course (3rd Year, Computer Engineering) at the **University of Valladolid**.
+> This repository contains a collection of High-Performance Computing (HPC) projects developed for the **Parallel Computing** course (3rd Year, Computer Engineering) at the **University of Valladolid**.
 > 
-> The core of the repository is a **cellular automata simulation of rainwater flooding**, parallelized using three different paradigms. Additionally, it includes a suite of highly optimized **CUDA kernels** for matrix operations.
+> The core of the repository is a **cellular automata simulation of rainwater flooding**, parallelized from scratch using three different computing paradigms (Sequential, Shared Memory, and Distributed Memory). Additionally, it includes a suite of highly optimized **CUDA kernels** for low-level GPU acceleration.
 
 <div align="center">
-  <img width="473" height="417" alt="image" src="https://github.com/user-attachments/assets/150ae4a7-e745-4109-b35d-c1d59c927c19" />
+  <img width="600" alt="Simulation Preview" src="https://github.com/user-attachments/assets/150ae4a7-e745-4109-b35d-c1d59c927c19" />
 </div> 
 
 ---
 
-# Project Structure
-```bash
+## Project Structure
+
+```text
 .
-├── Parallel Computing Simulation Floods & CUDA Kernels/
-│   ├── src/                         # C source codes (flood.c, flood_omp.c, flood_mpi.c, rng.c)
-│   │   └── cuda/                    # Specialized GPU kernels
-│   │   │   ├── matrix_mul.cu
-│   │   │   ├── dot_product.cu
-│   │   │   └── matrix_transpose.cu
-│   │   ├── flood.c
-│   │   ├── flood_omp.c
-│   │   ├── flood_mpi.c
-│   │   └── rng.c
-│   ├── visualization/       
-│   │   └── animation.py             # Python animation script
-│   └── Makefile                     # Unified build system
+├── src/                         # C source codes
+│   ├── cuda/                    # Specialized GPU kernels
+│   │   ├── matrix_mul.cu        # Tiled Matrix Multiplication
+│   │   ├── dot_product.cu       # Parallel Tree Reduction
+│   │   └── matrix_transpose.cu  # Bank-Conflict free Transpose
+│   ├── flood.c                  # Sequential Implementation
+│   ├── flood_omp.c              # OpenMP (Shared Memory)
+│   ├── flood_mpi.c              # MPI (Distributed Memory)
+│   └── rng.c                    # Random Number Generator
+├── visualization/       
+│   └── animation.py             # Python/Matplotlib animation script
+├── Makefile                     # Unified build system
 └── README.md
 ```
 
+---
+
 ## 1. Rainwater Flooding Simulation
 
-The simulation models rainwater falling from moving clouds onto a 2D topographical grid. It calculates water levels and spillage across neighboring cells based on height differences, ensuring mass conservation.
+### The Physics & Logic (Cellular Automata)
+The simulation models a dynamic weather system over a 2D topographical grid. 
+1. **Rainfall:** Moving clouds drop specific volumes of water onto the grid cells they cover during each discrete time step (minute).
+2. **Spillage:** Water flows to adjacent cells based on gravity. If the total height (terrain elevation + water level) of a cell is greater than its neighbors, water spills outwards proportionally to the height difference.
+3. **Conservation:** The algorithm ensures strict mass conservation—no water is created or destroyed during the spillage calculation.
+4. **Termination:** The simulation ends either when the `max_minutes` are reached, or when the water system reaches a steady state (spillage falls below a specified `threshold`).
 
-### Parallel Implementations:
-* **Sequential (Reference):** Baseline implementation used for validation.
-* **OpenMP (Shared Memory):** Uses `#pragma omp parallel for` with a **guided schedule** to handle load imbalance in flooded areas and `atomic` operations for thread-safe rainfall updates.
-* **MPI (Distributed Memory):** Implements **Domain Decomposition** using a **Ghost Rows (Halo)** strategy. Processes exchange boundary rows using non-blocking communications (`MPI_Isend`/`MPI_Irecv`) to ensure memory scalability and high performance.
+### Command Line Parameters Explained
+To run the simulation, you must provide a specific set of physical parameters defining the scenario.
 
-### Performance Benchmarks (Stress Test: 4M Cells)
-*Tested on a 2000x2000 grid for 200 simulation minutes using WSL2.*
+**Usage:**
+`./flood_seq <rows> <cols> <terrain> <threshold> <max_mins> <num_clouds> [cloud_1_params...] <seed>`
 
-| Version | Configuration | Execution Time | Speedup |
-| :--- | :--- | :--- | :--- |
-| **Sequential** | 1 Core | 161.63 s | 1.00x |
-| **OpenMP** | 8 Threads | **36.62 s** | **4.41x** |
-| **MPI** | 4 Processes | **57.92 s** | **2.79x** |
+* `rows` / `cols`: The dimensions of the topographical grid (e.g., 1000 1000).
+* `terrain`: A character defining the geography (e.g., `M` for Mountain, `V` for Valley, `D` for Valley with Dam).
+* `threshold`: Minimum water spillage required to keep the simulation active. Set to `0.0` to force the simulation to run all minutes.
+* `max_mins`: Maximum duration of the storm in simulation minutes.
+* `num_clouds`: How many clouds exist in the scenario.
+* `[cloud_params]`: An array of values defining the size, speed, position, and rain volume for each cloud.
+* `seed`: Random seed for reproducibility.
 
-> **Mathematical Consistency:** Both parallel versions (OpenMP and MPI) produced identical physical results (Total Rain, Water Level, and Water Loss) down to the 6th decimal place, confirming the robustness of the boundary exchange logic (Ghost Rows) and the thread-safe accumulation via reduction clauses.
+**Example Command:**
+```bash
+./flood_seq 100 100 M 0.0 50 1 15 20 20 0 10 5 30 10 45 123
+```
+
+### Parallel Implementations & Technical Challenges
+* **Sequential (Baseline):** The standard C implementation used to validate the math.
+* **OpenMP (Shared Memory):** Uses `#pragma omp parallel for` across the grid. **Challenge solved:** Handled race conditions when multiple clouds rain over the same cell using `atomic` operations, and utilized `guided` scheduling to balance the CPU load dynamically (since dry cells compute much faster than flooded cells).
+* **MPI (Distributed Memory):** **Challenge solved:** Implemented a 1D Domain Decomposition using the **Ghost Rows (Halo)** strategy. The grid is sliced horizontally, and boundary rows are exchanged between isolated processes at every time step using non-blocking communications (`MPI_Isend`/`MPI_Irecv`), ensuring high scalability across multiple physical nodes.
+
+### Performance Benchmarks (Stress Test)
+*Tested on a 4-Million cell grid (`2000x2000`) for 200 simulation minutes using WSL2.*
+
+| Paradigm | Configuration | Execution Time | Speedup | Efficiency |
+| :--- | :--- | :--- | :--- | :--- |
+| **Sequential** | 1 Core CPU | 161.63 s | 1.00x | 100% |
+| **OpenMP** | 8 Threads | **36.62 s** | **4.41x** | 55% |
+| **MPI** | 4 Processes | **57.92 s** | **2.79x** | 70% |
+
+> **Validation:** Both parallel versions produced identical physical results (Total Rain, Water Level, and Water Loss) down to the 6th decimal place, confirming the robustness of the boundary exchange logic and thread-safe reductions.
 
 ---
 
 ## 2. Optimized CUDA Kernels
 
-A set of laboratories focused on leveraging GPU architecture for massive parallelism. *(Note: These benchmarks were developed and tested on NVIDIA hardware provided by the university laboratories. They require a CUDA-capable GPU and the NVIDIA CUDA Toolkit to run locally).*
+A set of specialized laboratories focused on leveraging NVIDIA GPU architecture for massive parallelism. *(Note: These benchmarks require a CUDA-capable GPU and the NVIDIA CUDA Toolkit).*
 
-### Key Projects & Results:
-1.  **Tiled Matrix Multiplication:** Implements **Shared Memory Tiling** to reduce Global Memory traffic.
-    * **Result:** Achieved **477.84 GFLOPS** throughput and **4.49 ms** latency on a 1024x1024 matrix.
-2.  **Vector Dot Product (Reduction):** Uses a tree-based parallel reduction in Shared Memory to avoid non-coalesced memory access.
-    * **Result:** Processed 1M elements in just **1.28 ms** with 99.99% accuracy.
-3.  **Optimized Matrix Transpose:** Uses Shared Memory with **Padding** to avoid Bank Conflicts, maximizing effective bandwidth.
+### Key Optimizations & Results:
+1. **Matrix Multiplication (`matrix_mul.cu`):**
+   * **Technique:** Implemented **Shared Memory Tiling**. Instead of pulling data directly from slow Global Memory, threads load data chunks (tiles) into ultra-fast L1 Shared Memory, drastically improving the arithmetic intensity.
+   * **Result:** Achieved **477.84 GFLOPS** throughput and **4.49 ms** latency on a 1024x1024 matrix.
+2. **Vector Dot Product (`dot_product.cu`):**
+   * **Technique:** Avoided CPU bottlenecks by executing an in-place **Parallel Tree Reduction** inside the GPU's Shared Memory, combined with a Grid-Stride Loop to handle arbitrary vector sizes.
+   * **Result:** Processed 1 Million elements in just **1.28 ms** with 99.999% mathematical accuracy.
+3. **Matrix Transpose (`matrix_transpose.cu`):**
+   * **Technique:** Solved the classic memory uncoalescing problem. Added **Padding** to the shared memory array (`TILE_DIM + 1`) to completely eliminate **Bank Conflicts**, allowing the GPU to write transposed columns at maximum hardware bandwidth.
 
 ---
 
 ## Visualization & Demo
 
-The project includes a Python script to visualize the simulation results. It uses `Matplotlib` to render the terrain and an animated water overlay.
+A Python script is provided to visualize the raw numerical output of the simulation, using `Matplotlib` to render the terrain and an animated water overlay.
 
 ### How to run the animation:
-1. Compile the simulation with animation flags:
-```bash
-make clean && make animation
-```
-   
-Run the simulation and redirect output to a file:
+1. Compile the simulation with the animation preprocessor flags:
+   ```bash
+   make clean && make animation
+   ```
+2. Run the simulation and pipe the stdout output to a text file (keep grid size small, e.g., `100x100` for smooth rendering):
+   ```bash
+   ./flood_seq 100 100 M 0.0 50 1 15 20 20 0 10 5 30 10 45 123 > data.txt
+   ```
+3. Launch the visualizer:
+   ```bash
+   python3 visualization/animation.py data.txt
+   ```
 
-```bash
-./flood_seq 100 100 M 0.0 50 1 15 20 20 0 10 5 30 10 45 123 > data.txt
-```
-Play the visualizer:
+---
 
-```bash
-python3 visualization/animation.py data.txt
-```
+## Build & Run Instructions
 
-Build Instructions
-A unified Makefile is provided for the main simulation project.
+A unified `Makefile` is provided in the root directory.
 
 ```bash
 # Compile all CPU versions (Seq, OMP, MPI)
 make all
 
-# Run OpenMP version (e.g., with 8 threads)
+# Run OpenMP version (e.g., forcing 8 threads)
 export OMP_NUM_THREADS=8
 ./flood_omp <args...>
 
-# Run MPI version (e.g., with 4 processes)
+# Run MPI version (e.g., forcing 4 distributed processes)
 mpirun -np 4 ./flood_mpi <args...>
 
 # Compile CUDA kernels (NVIDIA GPU required)
-nvcc cuda/matrix_mul.cu -o matmul
+nvcc src/cuda/matrix_mul.cu -o matmul
+./matmul
 ```
+
+**Original Authors**
+
+-Iván Moro Cienfuegos and Gonzalo Sánchez Maroto
