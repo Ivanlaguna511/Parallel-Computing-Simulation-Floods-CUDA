@@ -13,7 +13,7 @@
 > 
 > The core of the repository is a **cellular automata simulation of rainwater flooding**, parallelized using three different paradigms. Additionally, it includes a suite of highly optimized **CUDA kernels** for matrix operations.
 
-<div centering = true>
+<div align="center">
   <img width="473" height="417" alt="image" src="https://github.com/user-attachments/assets/150ae4a7-e745-4109-b35d-c1d59c927c19" />
 </div> 
 
