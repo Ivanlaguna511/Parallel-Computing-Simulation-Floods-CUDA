@@ -22,14 +22,19 @@
 # Project Structure
 ```bash
 .
-├── Flood-Simulation/
-│   ├── src/                 # C source codes (flood.c, flood_omp.c, flood_mpi.c, rng.c)
-│   ├── visualization/       # Python animation script (animation.py)
-│   └── Makefile             # Unified build system
-├── CUDA-Labs/               # Specialized GPU kernels
-│   ├── matrix_mul.cu
-│   ├── dot_product.cu
-│   └── matrix_transpose.cu
+├── Parallel Computing Simulation Floods & CUDA Kernels/
+│   ├── src/                         # C source codes (flood.c, flood_omp.c, flood_mpi.c, rng.c)
+│   │   └── cuda/                    # Specialized GPU kernels
+│   │   │   ├── matrix_mul.cu
+│   │   │   ├── dot_product.cu
+│   │   │   └── matrix_transpose.cu
+│   │   ├── flood.c
+│   │   ├── flood_omp.c
+│   │   ├── flood_mpi.c
+│   │   └── rng.c
+│   ├── visualization/       
+│   │   └── animation.py             # Python animation script
+│   └── Makefile                     # Unified build system
 └── README.md
 ```
 
@@ -104,5 +109,5 @@ export OMP_NUM_THREADS=8
 mpirun -np 4 ./flood_mpi <args...>
 
 # Compile CUDA kernels (NVIDIA GPU required)
-nvcc CUDA-Labs/matrix_mul.cu -o matmul
+nvcc cuda/matrix_mul.cu -o matmul
 ```
