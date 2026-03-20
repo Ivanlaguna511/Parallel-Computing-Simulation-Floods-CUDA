@@ -6,8 +6,9 @@
   <img src="https://img.shields.io/badge/Parallel-MPI-008000?style=flat-square" alt="MPI" />
   <img src="https://img.shields.io/badge/GPU-CUDA-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="CUDA" />
   <img src="https://img.shields.io/badge/Visualization-Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/Academic_Project-3rd_Year-purple?style=for-the-badge" alt="Academic" />
+  <img src="https://img.shields.io/badge/Academic_Project-3rd_Year-purple?style=flat-square" alt="Academic" />
 </div>
+
 > **About this project:**
 > This repository contains a collection of High-Performance Computing (HPC) projects developed for the **Parallel Computing** course (3rd Year, Computer Engineering) at the **University of Valladolid**.
 > 
