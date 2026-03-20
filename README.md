@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Parallel-MPI-008000?style=flat-square" alt="MPI" />
   <img src="https://img.shields.io/badge/GPU-CUDA-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="CUDA" />
   <img src="https://img.shields.io/badge/Visualization-Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/Academic_Project-3rd_Year-purple?style=for-the-badge alt="3rd_Year_Project" />
+  ![Academic](https://img.shields.io/badge/Academic_Project-3rd_Year-purple?style=for-the-badge)
 </div>
 
 > **About this project:**
