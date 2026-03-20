@@ -19,6 +19,20 @@
 
 ---
 
+# Project Structure
+```bash
+.
+├── Flood-Simulation/
+│   ├── src/                 # C source codes (flood.c, flood_omp.c, flood_mpi.c, rng.c)
+│   ├── visualization/       # Python animation script (animation.py)
+│   └── Makefile             # Unified build system
+├── CUDA-Labs/               # Specialized GPU kernels
+│   ├── matrix_mul.cu
+│   ├── dot_product.cu
+│   └── matrix_transpose.cu
+└── README.md
+```
+
 ## 1. Rainwater Flooding Simulation
 
 The simulation models rainwater falling from moving clouds onto a 2D topographical grid. It calculates water levels and spillage across neighboring cells based on height differences, ensuring mass conservation.
@@ -60,21 +74,25 @@ The project includes a Python script to visualize the simulation results. It use
 
 ### How to run the animation:
 1. Compile the simulation with animation flags:
-   ```bash
-   make clean && make animation
+```bash
+make clean && make animation
+```
+   
 Run the simulation and redirect output to a file:
 
-Bash
+```bash
 ./flood_seq 100 100 M 0.0 50 1 15 20 20 0 10 5 30 10 45 123 > data.txt
+```
 Play the visualizer:
 
-Bash
+```bash
 python3 visualization/animation.py data.txt
+```
 
 Build Instructions
 A unified Makefile is provided for the main simulation project.
 
-Bash
+```bash
 # Compile all CPU versions (Seq, OMP, MPI)
 make all
 
@@ -87,15 +105,4 @@ mpirun -np 4 ./flood_mpi <args...>
 
 # Compile CUDA kernels (NVIDIA GPU required)
 nvcc CUDA-Labs/matrix_mul.cu -o matmul
-📂 Project Structure
-Plaintext
-.
-├── Flood-Simulation/
-│   ├── src/                 # C source codes (flood.c, flood_omp.c, flood_mpi.c, rng.c)
-│   ├── visualization/       # Python animation script (animation.py)
-│   └── Makefile             # Unified build system
-├── CUDA-Labs/               # Specialized GPU kernels
-│   ├── matrix_mul.cu
-│   ├── dot_product.cu
-│   └── matrix_transpose.cu
-└── README.md
+```
